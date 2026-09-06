@@ -339,6 +339,8 @@ def training(cfg,args):
                 checkpoint = Checkpoint(
                     f_params=mdl_path_tmp, f_criterion=None, f_optimizer=None, f_history=None,
                     monitor='valid_loss_best', load_best=True)
+
+                # 用mdl_class包装出一个skorch风格的训练器
                 net = DomainAdaptNeuralNetClassifier(
                     mdl_class,
                     train_split=valid_cv,
@@ -359,6 +361,7 @@ def training(cfg,args):
 
             dsprep.train()  # mask labels
             dstrn = torch.utils.data.Subset(dsprep, train)
+            # 开始训练
             net.fit(dstrn, None)
 
             res = pd.DataFrame(net.history)
