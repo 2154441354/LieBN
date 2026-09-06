@@ -1,3 +1,6 @@
+# 该文件定义了在这个基础的TSM网络中，把原始的BN换成了LieBN
+
+#先继承tsmnet.yaml，再用当前文件里的设置覆盖它
 defaults:
     - tsmnet
     - _self_
