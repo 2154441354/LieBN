@@ -37,9 +37,10 @@ import mne
 
 from LieBN_utilities.utils import get_model_name,write_final_results,set_seed_thread
 
-# 读取在yaml里选的是不是TSMNet+LieBN
 
 def training(cfg,args):
+    
+    # 读取在yaml里选的是不是TSMNet+LieBN
     args.model_type=cfg.nnet.name
 
     data_dir = cfg.data_dir
@@ -52,6 +53,7 @@ def training(cfg,args):
     args.seed = cfg.seed
     set_seed_thread(args.seed, args.threadnum)
 
+    # 是TSMNet+LieBN，就把spd lieBN所需要的几何配置读出来：metric、θ、α、β
     if args.model_type=='TSMNet+LieBN':
         args.metric = cfg.nnet.model.metric
         args.theta = cfg.nnet.model.theta
@@ -61,6 +63,8 @@ def training(cfg,args):
         # args.is_var = cfg.nnet.model.is_var
         # args.is_no_grad_var = cfg.nnet.model.is_no_grad_var
     args.learn_mean = cfg.nnet.model.learn_mean
+    
+    # 这个TSMNet部分先有空间投影结构，再进入spd网络
     args.architecture=[cfg.nnet.model.spatial_filters, cfg.nnet.model.subspacedims]
     args.optimizer = 'AMSGRAD' if cfg.nnet.optimizer.amsgrad else 'ADAM'
     args.lr = cfg.nnet.optimizer.lr
@@ -91,6 +95,7 @@ def training(cfg,args):
         if 'prep_pipeline' not in cfg.nnet:
             cfg.nnet.prep_pipeline = None
 
+    # 创建EEG数据集和预处理流程
     dataset = hydra.utils.instantiate(cfg.dataset.type, _convert_='partial')
     ppreprocessing_dict = hydra.utils.instantiate(cfg.preprocessing, _convert_='partial')
     assert (len(ppreprocessing_dict) == 1)  # only 1 paradigm is allowed per call
@@ -154,6 +159,7 @@ def training(cfg,args):
 
         selected_sessions = cfg.dataset.get("sessions", None)
 
+        # 真正把moabb的EEG数据加载进来
         ds = CombinedDomainDataset.from_moabb(paradigm, dataset, subjects=subset, domain_expression=domain_expression,
                                               dtype=cfg.nnet.inputtype, sessions=selected_sessions)
 
@@ -177,11 +183,13 @@ def training(cfg,args):
 
         mdl_kwargs = dict(nclasses=n_classes)
 
+        # 告诉模型：输入EEG有多少通道、多少时间点、多少频带
         mdl_kwargs['nchannels'] = ds.shape[1]
         mdl_kwargs['nsamples'] = ds.shape[2]
         mdl_kwargs['nbands'] = ds.shape[3] if ds.ndim == 4 else 1
         mdl_kwargs['input_shape'] = (1,) + ds.shape[1:]
 
+        # 真正模型的地方
         mdl_dict = OmegaConf.to_container(cfg.nnet.model, resolve=True)
         mdl_class = hydra.utils.get_class(mdl_dict.pop('_target_'))
 
@@ -197,6 +205,7 @@ def training(cfg,args):
             # we need to load the entire dataset
             ds = ds.cache()
 
+        # 把yaml里的模型参数全塞进去
         mdl_kwargs = {**mdl_kwargs, **mdl_dict}
 
         optim_kwargs = OmegaConf.to_container(cfg.nnet.optimizer, resolve=True)
