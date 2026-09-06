@@ -9,6 +9,13 @@ from .base import DomainAdaptFineTuneableModel, FineTuneableModel, PatternInterp
 
 
 class TSMNet(DomainAdaptFineTuneableModel, FineTuneableModel, PatternInterpretableModel):
+    # temporal_filters时间卷积滤波器数量
+    #spatial_filters=40：空间滤波后得到 40 个特征通道
+    #subspacedims=20：后面 SPD 从 40×40 降到 20×20
+    #bnorm：决定用 SPDDSMBN 还是 LieBN
+    #metric='AIM'：LieBN 使用 AIM/AIRM 几何
+    #theta/alpha/beta：这个 AIM 几何的参数
+    #learn_mean=False：不学习 BN 的 bias/mean，固定到单位阵思路
     def __init__(self, temporal_filters, spatial_filters = 40,
                  subspacedims = 20,
                  temp_cnn_kernel = 25,
