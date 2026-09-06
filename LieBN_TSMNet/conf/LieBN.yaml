@@ -3,6 +3,8 @@ defaults:
   - dataset: hinss2021
   - evaluation: inter-session+uda
   - preprocessing: bb4-36Hz
+  
+  #模型所在路径
   - nnet: tsmnet_spddsmbn
   - override hydra/launcher: joblib
 fit:
