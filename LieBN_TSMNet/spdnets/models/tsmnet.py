@@ -10,12 +10,12 @@ from .base import DomainAdaptFineTuneableModel, FineTuneableModel, PatternInterp
 
 class TSMNet(DomainAdaptFineTuneableModel, FineTuneableModel, PatternInterpretableModel):
     # temporal_filters时间卷积滤波器数量
-    #spatial_filters=40：空间滤波后得到 40 个特征通道
-    #subspacedims=20：后面 SPD 从 40×40 降到 20×20
-    #bnorm：决定用 SPDDSMBN 还是 LieBN
-    #metric='AIM'：LieBN 使用 AIM/AIRM 几何
-    #theta/alpha/beta：这个 AIM 几何的参数
-    #learn_mean=False：不学习 BN 的 bias/mean，固定到单位阵思路
+    # spatial_filters=40：空间滤波后得到 40 个特征通道
+    # subspacedims=20：后面 SPD 从 40×40 降到 20×20
+    # bnorm：决定用 SPDDSMBN 还是 LieBN
+    # metric='AIM'：LieBN 使用 AIM/AIRM 几何
+    # theta/alpha/beta：这个 AIM 几何的参数
+    # learn_mean=False：不学习 BN 的 bias/mean，固定到单位阵思路
     def __init__(self, temporal_filters, spatial_filters = 40,
                  subspacedims = 20,
                  temp_cnn_kernel = 25,
@@ -35,16 +35,20 @@ class TSMNet(DomainAdaptFineTuneableModel, FineTuneableModel, PatternInterpretab
             self.bnorm_dispersion_ = BatchNormDispersion[bnorm_dispersion]
         else:
             self.bnorm_dispersion_ = bnorm_dispersion
-        
+
+        # 降维后的spd再做logeig并向量化后，最终的维度计算公式
         tsdim = int(subspacedims*(subspacedims+1)/2)
-        
+
         self.cnn = torch.nn.Sequential(
+             # 第一层只沿着时间方向卷积，时间滤波
             torch.nn.Conv2d(1, self.temporal_filters_, kernel_size=(1,temp_cnn_kernel),
                             padding='same', padding_mode='reflect'),
+             # 第二层把所有EEG通道一起卷积，空间/通道滤波
             torch.nn.Conv2d(self.temporal_filters_, self.spatial_filters_,(self.nchannels_, 1)),
+             # 第三层展平，每个样本变成【B，40，T】这样的时序特征
             torch.nn.Flatten(start_dim=2),
         ).to(self.device_)
-
+        # 沿着时间维计算协方差，每个样本变成40*40的SPD矩阵
         self.cov_pooling = torch.nn.Sequential(
             modules.CovariancePool(),
         )
@@ -66,6 +70,7 @@ class TSMNet(DomainAdaptFineTuneableModel, FineTuneableModel, PatternInterpretab
         elif self.bnorm_ is not None:
             raise NotImplementedError('requested undefined batch normalization method.')
 
+        # 先做BiMap，进行spd降维，然后ReEig保证spd稳定
         self.spdnet = torch.nn.Sequential(
             modules.BiMap((1,self.spatial_filters_,subspacedims), dtype=torch.double, device=self.spd_device_),
             modules.ReEig(threshold=1e-4),
