@@ -1,6 +1,8 @@
 defaults:
   - _self_
   - dataset: hinss2021
+
+  #评估方式：跨session测试+无监督适应+标签被mask掉
   - evaluation: inter-session+uda
   - preprocessing: bb4-36Hz
   
@@ -11,15 +13,18 @@ fit:
   stratified: True
   epochs: 50
   batch_size_train: 50
+  #一个batch包含5个domain，这些domain和session（subject）相关
   domains_per_batch: 5
   batch_size_test: -1
+  # 20%的训练集数据拿出来做验证集
   validation_size: 0.2 #0.1 # float <1 for fraction; int for specific number
+  #每次留5%的domain做测试集
   test_size: 0.05 # percent of groups/domains used for testing
 
 saving_model:
   is_save_model: False
   is_save_results_each_fold: True
-
+#评价指标 
 score: balanced_accuracy # sklearn scores
 device: GPU
 threadnum: 1
