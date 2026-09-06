@@ -37,6 +37,8 @@ import mne
 
 from LieBN_utilities.utils import get_model_name,write_final_results,set_seed_thread
 
+# 读取在yaml里选的是不是TSMNet+LieBN
+
 def training(cfg,args):
     args.model_type=cfg.nnet.name
 
