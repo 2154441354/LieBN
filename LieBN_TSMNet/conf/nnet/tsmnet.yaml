@@ -6,8 +6,11 @@ model:
     temporal_filters: 4
     spatial_filters: 40
     subspacedims: 20
+    # 没有让 LieBN 自己训练一个任意的 SPD 偏置中心G，而是把 bias 固定成单位阵 I
     learn_mean: False # Following SPDDSMBN, we set bias=I
     bnorm: null
+    # 方差控制是标量级 dispersion。
+    #不是每个维度一个不同缩放，而是用一个整体的 scalar 控制 SPD 分布的离散程度
     bnorm_dispersion: null
 optimizer:
     _target_: geoopt.optim.RiemannianAdam
