@@ -19,6 +19,8 @@ from . import functionals
 from spdnets.BaseBatchNorm import BaseBatchNorm,BatchNormDispersion,BatchNormTestStatsMode
 
 
+# 输入一批spd，然后根据选的metric（AIM / LEM / LCM）变换到对应几何表示，再求均值和方差，进行中心化和方差缩放，
+# 之后可选bias，再映射回来得到spd输出版
 class SPDLieBatchNormImpl(BaseBatchNorm):
     def __init__(self, shape: Tuple[int, ...] or th.Size, batchdim: int,
                  eta=1., eta_test=0.1,
